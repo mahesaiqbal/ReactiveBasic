@@ -14,65 +14,87 @@ import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Function;
-import io.reactivex.functions.Predicate;
-import io.reactivex.observers.DisposableObserver;
 import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
+    private Disposable disposable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-//        Integer[] numbers = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-//                11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
+        Observable<Note> notesObservable = getNotesObservable();
 
-        Observable.range(1, 20)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .filter(new Predicate<Integer>() {
-                    @Override
-                    public boolean test(Integer integer) throws Exception {
-                        return integer % 2 == 0;
-                    }
-                })
-                .map(new Function<Integer, String>() {
-                    @Override
-                    public String apply(Integer integer) throws Exception {
-                        return integer + " is even number";
-                    }
-                })
-                .subscribe(new Observer<String>() {
-                    @Override
-                    public void onSubscribe(Disposable d) {
+        Observer<Note> notesObserver = getNotesObserver();
 
-                    }
+        notesObservable
+                .observeOn(Schedulers.io())
+                .subscribeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(notesObserver);
+    }
 
-                    @Override
-                    public void onNext(String s) {
-                        Log.d(TAG, "onNext: " + s);
-                    }
+    private Observer<Note> getNotesObserver() {
+        return new Observer<Note>() {
 
-                    @Override
-                    public void onError(Throwable e) {
+            @Override
+            public void onSubscribe(Disposable d) {
+                Log.d(TAG, "onSubscribe");
+                disposable = d;
+            }
 
-                    }
+            @Override
+            public void onNext(Note note) {
+                Log.d(TAG, "onNext: " + note.getNote());
+            }
 
-                    @Override
-                    public void onComplete() {
-                        Log.d(TAG, "All numbers emitted!");
+            @Override
+            public void onError(Throwable e) {
+                Log.e(TAG, "onError: " + e.getMessage());
+            }
+
+            @Override
+            public void onComplete() {
+                Log.d(TAG, "onComplete");
+            }
+        };
+    }
+
+    private Observable<Note> getNotesObservable() {
+        final List<Note> notes = prepareNotes();
+
+        return Observable.create(new ObservableOnSubscribe<Note>() {
+            @Override
+            public void subscribe(ObservableEmitter<Note> emitter) throws Exception {
+                for (Note note : notes) {
+                    if (!emitter.isDisposed()) {
+                        emitter.onNext(note);
                     }
-                });
+                }
+
+                // all notes are emitted
+                if (!emitter.isDisposed()) {
+                    emitter.onComplete();
+                }
+            }
+        });
+    }
+
+    private List<Note> prepareNotes() {
+        List<Note> notes = new ArrayList<>();
+        notes.add(new Note(1, "Buy tooth paste!"));
+        notes.add(new Note(2, "Call brother!"));
+        notes.add(new Note(3, "Watch Narcos tonight!"));
+        notes.add(new Note(4, "Pay power bill!"));
+        return notes;
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        disposable.dispose();
     }
 }
