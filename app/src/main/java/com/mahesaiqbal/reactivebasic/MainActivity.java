@@ -6,10 +6,10 @@ import android.util.Log;
 
 import com.mahesaiqbal.reactivebasic.model.Note;
 
-import io.reactivex.Maybe;
-import io.reactivex.MaybeEmitter;
-import io.reactivex.MaybeObserver;
-import io.reactivex.MaybeOnSubscribe;
+import io.reactivex.Completable;
+import io.reactivex.CompletableEmitter;
+import io.reactivex.CompletableObserver;
+import io.reactivex.CompletableOnSubscribe;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
@@ -19,60 +19,65 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
     private Disposable disposable;
 
+    /**
+     * Completable won't emit any item, instead it returns
+     * Success or failure state
+     * Consider an example of making a PUT request to server to update
+     * something where you are not expecting any response but the
+     * success status
+     * -
+     * Completable : CompletableObserver
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Maybe<Note> noteObservable = getNoteObservable();
+        Note note = new Note(1, "Home Work!");
 
-        MaybeObserver<Note> noteObserver = getNoteObserver();
+        Completable completableObservable = updateNote(note);
 
-        noteObservable
+        CompletableObserver completableObserver = completableObserver();
+
+        completableObservable
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(noteObserver);
+                .subscribe(completableObserver);
     }
 
-    private MaybeObserver<Note> getNoteObserver() {
-        return new MaybeObserver<Note>() {
+    /**
+     * Assume this making PUT request to server to update the Note
+     */
+    private Completable updateNote(Note note) {
+        return Completable.create(new CompletableOnSubscribe() {
+            @Override
+            public void subscribe(CompletableEmitter emitter) throws Exception {
+                if (!emitter.isDisposed()) {
+                    Thread.sleep(1000);
+                    emitter.onComplete();
+                }
+            }
+        });
+    }
 
+    private CompletableObserver completableObserver() {
+        return new CompletableObserver() {
             @Override
             public void onSubscribe(Disposable d) {
+                Log.d(TAG, "onSubscribe");
                 disposable = d;
             }
 
             @Override
-            public void onSuccess(Note note) {
-                Log.d(TAG, "onSuccess : " + note.getNote());
+            public void onComplete() {
+                Log.d(TAG, "onComplete: Note updated successfully!");
             }
 
             @Override
             public void onError(Throwable e) {
-                Log.e(TAG, "onError : " + e.getMessage());
-            }
-
-            @Override
-            public void onComplete() {
-                Log.d(TAG, "onComplete");
+                Log.e(TAG, "onError: " + e.getMessage());
             }
         };
-    }
-
-    /**
-     * Emits optional data (0 or 1 emission)
-     * But for now it emits 1 Note always
-     */
-    private Maybe<Note> getNoteObservable() {
-        return Maybe.create(new MaybeOnSubscribe<Note>() {
-            @Override
-            public void subscribe(MaybeEmitter<Note> emitter) throws Exception {
-                Note note = new Note(1, "Call brother!");
-                if (!emitter.isDisposed()) {
-                    emitter.onSuccess(note);
-                }
-            }
-        });
     }
 
     @Override
