@@ -34,7 +34,7 @@ public class MainActivity extends AppCompatActivity {
             public User apply(User user) throws Exception {
                 // modifying user object by adding email address
                 // turning user name to uppercase
-                user.setEmail(String.format("%s@dorm.com", user.getName()));
+                user.setEmail(String.format("%s@dorm.com", user.getName()).toLowerCase());
                 user.setName(user.getName().toUpperCase());
                 return user;
             }
