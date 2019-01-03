@@ -33,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
         getUsersObservable()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .flatMap(new Function<User, Observable<User>>() {
+                .concatMap(new Function<User, Observable<User>>() {
                     @Override
                     public Observable<User> apply(User user) throws Exception {
                         // getting each user address by making another network call
