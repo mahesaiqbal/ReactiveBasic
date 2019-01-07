@@ -3,49 +3,68 @@ package com.mahesaiqbal.reactivebasic;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Button;
+import android.widget.TextView;
 
+import com.jakewharton.rxbinding2.view.RxView;
+
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import io.reactivex.Observable;
-import io.reactivex.ObservableSource;
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.Unbinder;
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Function;
-import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
+
+    @BindView(R.id.tap_result)
+    TextView txtTapResult;
+
+    @BindView(R.id.tap_result_max_count)
+    TextView txtTapResultMax;
+
+    @BindView(R.id.layout_tap_area)
+    Button btnTapArea;
+
     private Disposable disposable;
+    private Unbinder unbinder;
+    private int maxTaps = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        unbinder = ButterKnife.bind(this);
 
-        Observable<Integer> integerObservable = Observable.fromArray(new Integer[]{1, 2, 3, 4, 5, 6});
-
-        // it always emits 6 as it un-subscribes the before observer
-        integerObservable
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .switchMap(new Function<Integer, ObservableSource<Integer>>() {
+        RxView.clicks(btnTapArea)
+                .map(new Function<Object, Integer>() {
                     @Override
-                    public ObservableSource<Integer> apply(Integer integer) throws Exception {
-                        return Observable.just(integer).delay(1, TimeUnit.SECONDS);
+                    public Integer apply(Object o) throws Exception {
+                        return 1;
                     }
                 })
-                .subscribe(new Observer<Integer>() {
+                .buffer(3, TimeUnit.SECONDS)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(new Observer<List<Integer>>() {
                     @Override
                     public void onSubscribe(Disposable d) {
-                        Log.d(TAG, "onSubscribe");
                         disposable = d;
                     }
 
                     @Override
-                    public void onNext(Integer integer) {
-                        Log.d(TAG, "onNext: " + integer);
+                    public void onNext(List<Integer> integers) {
+                        Log.d(TAG, "onNext: " + integers.size() + " taps received!");
+                        if (integers.size() > 0) {
+                            maxTaps = integers.size() > maxTaps ? integers.size() : maxTaps;
+                            txtTapResult.setText(String.format("Received %d taps in 3 secs", integers.size()));
+                            txtTapResultMax.setText(String.format("Maximum of %d taps received in this session", maxTaps));
+                        }
                     }
 
                     @Override
@@ -55,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onComplete() {
-                        Log.d(TAG, "All users emitted!");
+                        Log.e(TAG, "onComplete");
                     }
                 });
     }
@@ -63,6 +82,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        unbinder.unbind();
         disposable.dispose();
     }
 }
