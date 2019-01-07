@@ -6,28 +6,33 @@
     android:layout_height="match_parent"
     android:background="@android:color/white"
     android:orientation="vertical"
+    android:padding="16dp"
     tools:context=".MainActivity">
 
-    <Button
-        android:id="@+id/layout_tap_area"
-        android:layout_width="match_parent"
-        android:layout_height="100dp"
-        android:layout_margin="16dp"
-        android:clickable="true"
-        android:gravity="center"
-        android:text="Tap repeatedly here!"
-        android:textAllCaps="false" />
-
-    <TextView
-        android:id="@+id/tap_result"
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_horizontal" />
+        android:layout_marginBottom="32dp">
 
-    <TextView
-        android:id="@+id/tap_result_max_count"
+        <TextView
+            android:id="@+id/query"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Query : "
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/txt_search_string"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/query"
+            android:textSize="16sp" />
+    </RelativeLayout>
+
+    <EditText
+        android:id="@+id/input_search"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_horizontal" />
+        android:hint="Input text in here" />
 
 </LinearLayout>
